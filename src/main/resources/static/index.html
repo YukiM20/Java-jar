@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Citas Médicas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <h2 class="text-center mb-4 text-primary">Sistema de Citas Médicas</h2>
+
+    <!-- Formulario de Registro -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">Programar Nueva Cita</h5>
+        </div>
+        <div class="card-body">
+            <form id="citaForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small mb-1">Nombre del Paciente</label>
+                        <input type="text" id="paciente" class="form-control" placeholder="Ej. Juan Pérez" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small mb-1">Médico Asignado</label>
+                        <input type="text" id="medico" class="form-control" placeholder="Ej. Dra. Ana Gómez" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small mb-1">Fecha</label>
+                        <input type="date" id="fecha" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small mb-1">Hora</label>
+                        <input type="time" id="hora" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small mb-1">Motivo de la consulta</label>
+                        <input type="text" id="motivo" class="form-control" placeholder="Ej. Chequeo general, dolor de cabeza..." required>
+                    </div>
+                    <div class="col-12 mt-4 text-end">
+                        <button type="submit" class="btn btn-primary px-5">Guardar Cita</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Resultados -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">Citas Programadas</h5>
+            <div class="table-responsive">
+                <table class="table table-hover mt-3 align-middle">
+                    <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Paciente</th>
+                        <th>Médico</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Motivo</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tablaCitas">
+                    <!-- Los datos de tu base de datos aparecerán aquí -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = '/api/citas';
+
+    // 1. Cargar datos de la BD al abrir la página
+    document.addEventListener('DOMContentLoaded', cargarCitas);
+
+    // 2. Enviar datos al controlador POST
+    document.getElementById('citaForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Construimos el JSON exactamente con los nombres de atributos de tu clase Cita.java
+        const nuevaCita = {
+            paciente: document.getElementById('paciente').value,
+            medico: document.getElementById('medico').value,
+            fecha: document.getElementById('fecha').value,
+            hora: document.getElementById('hora').value,
+            motivo: document.getElementById('motivo').value
+        };
+
+        fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(nuevaCita)
+        })
+            .then(response => {
+                if(!response.ok) throw new Error('Error en el servidor');
+                return response.json();
+            })
+            .then(() => {
+                document.getElementById('citaForm').reset();
+                cargarCitas(); // Refrescamos la tabla para ver el nuevo registro
+            })
+            .catch(error => alert('Hubo un error al guardar la cita. Revisa la consola.'));
+    });
+
+    // 3. Consumir el controlador GET (Listar todas)
+    function cargarCitas() {
+        fetch(API_URL)
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('tablaCitas');
+                tbody.innerHTML = ''; // Limpiamos la tabla
+
+                data.forEach(cita => {
+                    tbody.innerHTML += `
+                            <tr>
+                                <td><span class="badge bg-secondary">${cita.id}</span></td>
+                                <td class="fw-bold">${cita.paciente}</td>
+                                <td>${cita.medico}</td>
+                                <td>${cita.fecha}</td>
+                                <td>${cita.hora}</td>
+                                <td class="text-muted text-truncate" style="max-width: 150px;">${cita.motivo}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-outline-danger btn-sm" onclick="eliminarCita(${cita.id})">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
+                });
+            })
+            .catch(error => console.error('Error al cargar la tabla:', error));
+    }
+
+    // 4. Consumir el controlador DELETE
+    function eliminarCita(id) {
+        if(confirm('¿Confirmas que deseas eliminar esta cita médica del sistema?')) {
+            fetch(`${API_URL}/${id}`, { method: 'DELETE' })
+                .then(response => {
+                    if(response.ok) {
+                        cargarCitas(); // Volvemos a cargar la tabla si se borró con éxito
+                    } else {
+                        alert('No se pudo eliminar la cita.');
+                    }
+                })
+                .catch(error => console.error('Error en la petición DELETE:', error));
+        }
+    }
+</script>
+</body>
+</html>
