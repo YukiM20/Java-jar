@@ -1,6 +1,6 @@
 package com.utp.myproject.controller;
 
-
+import java.net.InetAddress;
 import com.utp.myproject.model.Cita;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -35,6 +35,15 @@ public class CitaController {
     @GetMapping
     public List<Cita> listarTodas() {
         return entityManager.createQuery("SELECT c FROM Cita c", Cita.class).getResultList();
+    }
+
+    // Identificar qué servidor/instancia responde
+    @GetMapping("/servidor")
+    public Map<String, String> identificarServidor() throws Exception {
+        Map<String, String> info = new HashMap<>();
+        info.put("hostname", InetAddress.getLocalHost().getHostName());
+        info.put("ip", InetAddress.getLocalHost().getHostAddress());
+        return info;
     }
 
     // READ ONE - GET /api/citas/1
